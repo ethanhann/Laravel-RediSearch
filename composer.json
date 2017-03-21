@@ -1,0 +1,25 @@
+{
+    "name": "ethanhann/laravel-redisearch",
+    "type": "library",
+    "description": "RediSearch integration for Laravel",
+    "keywords": [
+        "redis", "redisearch", "laravel", "scout", "search", "fulltext", "geosearch", "php"
+    ],
+    "homepage": "https://github.com/teamtnt/tntsearch",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ethan Hann",
+            "email": "ethanhann@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Ehann\\": "src/Ehann"
+        }
+    },
+    "require": {
+        "laravel/scout": "^3.0",
+        "ethanhann/redisearch-php": "^0.5.0"
+    }
+}
