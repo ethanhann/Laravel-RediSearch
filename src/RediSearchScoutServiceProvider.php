@@ -18,6 +18,10 @@ class RediSearchScoutServiceProvider extends ServiceProvider
             $this->commands([
                 ImportCommand::class,
             ]);
+
+            $this->publishes([
+                __DIR__.'/../config/ehann-redisearch.php' => $this->app['path.config'].DIRECTORY_SEPARATOR.'ehann-redisearch.php',
+            ]);
         }
     }
 }
