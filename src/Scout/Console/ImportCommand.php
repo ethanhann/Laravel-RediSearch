@@ -1,13 +1,12 @@
 <?php
 
-namespace Ehann\Scout\Console;
+namespace Ehann\LaravelRediSearch\Scout\Console;
 
 use DB;
 use Ehann\RediSearch\Fields\FieldFactory;
 use Ehann\RediSearch\Index;
 use Ehann\RediSearch\Redis\RedisClient;
 use Illuminate\Console\Command;
-use Redis;
 
 class ImportCommand extends Command
 {
@@ -18,20 +17,11 @@ class ImportCommand extends Command
                             ';
     protected $description = 'Import models into index';
 
-    public function handle(Redis $redis)
+    public function handle(RedisClient $redisClient)
     {
         $class = $this->argument('model');
         $model = new $class();
-        $index = new Index(
-            new RedisClient(
-                config('ehann-redisearch.client'),
-                config('ehann-redisearch.host'),
-                config('ehann-redisearch.port'),
-                config('ehann-redisearch.database'),
-                config('ehann-redisearch.password')
-            ),
-            $model->searchableAs()
-        );
+        $index = new Index($redisClient, $model->searchableAs());
 
         $fields = array_keys($model->toSearchableArray());
         if (!$this->option('no-id')) {

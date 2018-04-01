@@ -5,7 +5,7 @@
     "keywords": [
         "redis", "redisearch", "laravel", "scout", "search", "fulltext", "geosearch", "php"
     ],
-    "homepage": "https://github.com/teamtnt/tntsearch",
+    "homepage": "https://github.com/ethanhann/Laravel-RediSearch",
     "license": "MIT",
     "authors": [
         {
@@ -15,7 +15,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Ehann\\Scout\\": "src"
+            "Ehann\\LaravelRediSearch\\": "src"
         }
     },
     "require": {
