@@ -5,7 +5,7 @@ namespace Ehann\LaravelRediSearch\Scout\Console;
 use DB;
 use Ehann\RediSearch\Fields\FieldFactory;
 use Ehann\RediSearch\Index;
-use Ehann\RediSearch\Redis\RedisClient;
+use Ehann\RediSearch\Redis\RedisClientInterface;
 use Illuminate\Console\Command;
 
 class ImportCommand extends Command
@@ -17,7 +17,7 @@ class ImportCommand extends Command
                             ';
     protected $description = 'Import models into index';
 
-    public function handle(RedisClient $redisClient)
+    public function handle(RedisClientInterface $redisClient)
     {
         $class = $this->argument('model');
         $model = new $class();
