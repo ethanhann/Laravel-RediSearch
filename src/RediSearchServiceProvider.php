@@ -12,8 +12,10 @@ class RediSearchServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->app->singleton(RedisClientInterface::class, function () {
-            return new ClientAdapter();
+        $this->app->singleton(RedisClientInterface::class, function ($app) {
+            $clientAdapter = new ClientAdapter();
+            $clientAdapter->redis = $app->make('redis');
+            return $clientAdapter;
         });
     }
 
