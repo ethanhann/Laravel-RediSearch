@@ -19,7 +19,7 @@
         }
     },
     "require": {
-        "laravel/scout": "^3.0|^4.0",
+        "laravel/scout": "^3.0|^4.0|^5.0",
         "ethanhann/redisearch-php": "^1.0.0",
         "ethanhann/redis-raw": "^0.3.1"
     },
