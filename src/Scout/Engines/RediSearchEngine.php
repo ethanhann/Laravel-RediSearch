@@ -3,7 +3,7 @@
 namespace Ehann\LaravelRediSearch\Scout\Engines;
 
 use Ehann\RediSearch\Index;
-use Ehann\RediSearch\Redis\RedisClientInterface;
+use Ehann\RedisRaw\RedisRawClientInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
@@ -11,18 +11,17 @@ use Laravel\Scout\Engines\Engine;
 class RediSearchEngine extends Engine
 {
     /**
-     * @var RedisClientInterface
+     * @var RedisRawClientInterface
      */
-    private $RedisClientInterface;
+    private $redisRawClient;
 
     /**
      * RediSearchEngine constructor.
-     * @param RedisClientInterface $RedisClientInterface
+     * @param RedisRawClientInterface $redisRawClient
      */
-    public function __construct(RedisClientInterface $RedisClientInterface)
+    public function __construct(RedisRawClientInterface $redisRawClient)
     {
-
-        $this->RedisClientInterface = $RedisClientInterface;
+        $this->redisRawClient = $redisRawClient;
     }
 
     /**
@@ -33,7 +32,7 @@ class RediSearchEngine extends Engine
      */
     public function update($models)
     {
-        $index = new Index($this->RedisClientInterface, $models->first()->searchableAs());
+        $index = new Index($this->redisRawClient, $models->first()->searchableAs());
 
         $models
             ->map(function ($model) {
@@ -58,7 +57,7 @@ class RediSearchEngine extends Engine
      */
     public function delete($models)
     {
-        $index = new Index($this->RedisClientInterface, $models->first()->searchableAs());
+        $index = new Index($this->redisRawClient, $models->first()->searchableAs());
         $models
             ->map(function ($model) {
                 return $model->getKey();
@@ -77,7 +76,7 @@ class RediSearchEngine extends Engine
      */
     public function search(Builder $builder)
     {
-        return (new Index($this->RedisClientInterface, $builder->index ?? $builder->model->searchableAs()))
+        return (new Index($this->redisRawClient, $builder->index ?? $builder->model->searchableAs()))
             ->search($builder->query);
     }
 
@@ -92,7 +91,7 @@ class RediSearchEngine extends Engine
     public function paginate(Builder $builder, $perPage, $page)
     {
 
-        return collect((new Index($this->RedisClientInterface, $builder->index ?? $builder->model->searchableAs()))
+        return collect((new Index($this->redisRawClient, $builder->index ?? $builder->model->searchableAs()))
             ->limit($page, $perPage)
             ->search($builder->query));
     }
