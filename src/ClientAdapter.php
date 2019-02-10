@@ -2,11 +2,11 @@
 
 namespace Ehann\LaravelRediSearch;
 
-use Ehann\RediSearch\Redis\AbstractRedisClient;
+use Ehann\RedisRaw\AbstractRedisRawClient;
 use Exception;
 use Illuminate\Support\Facades\Redis;
 
-class ClientAdapter extends AbstractRedisClient
+class ClientAdapter extends AbstractRedisRawClient
 {
     /** @var Redis */
     public $redis;

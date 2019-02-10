@@ -45,7 +45,7 @@ class RediSearchTest extends PHPUnit\Framework\TestCase
     protected function getClientAdapter()
     {
         $clientAdapter = new ClientAdapter();
-        $clientAdapter->redis = m::mock(\Ehann\RediSearch\Redis\PhpRedisAdapter::class);
+        $clientAdapter->redis = m::mock(\Ehann\RedisRaw\PhpRedisAdapter::class);
         return $clientAdapter;
     }
 }
