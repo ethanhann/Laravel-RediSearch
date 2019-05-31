@@ -14,6 +14,7 @@ class ImportCommand extends Command
                             {model : The model class to import.} 
                             {--recreate-index : Drop the index before importing.}
                             {--no-id : Do not select by "id" primary key.}
+                            {--no-import-models : Create index but dont import model.}
                             ';
     protected $description = 'Import models into index';
 
@@ -56,9 +57,10 @@ class ImportCommand extends Command
 
         if (!$index->create()) {
             $this->warn('The index already exists. Use --recreate-index to recreate the index before importing.');
-        }
-
-        $records
+		}
+		
+		if (!$this->option('no-import-models')) {
+			$records
             ->each(function ($item) use ($index, $model) {
                 $document = $index->makeDocument(
                     property_exists($item, $model->getKeyName()) ? $item->{$model->getKeyName()} : null
@@ -71,6 +73,9 @@ class ImportCommand extends Command
                 }
                 $index->add($document);
             });
+		}
+
+
 
         $this->info('All [' . $class . '] records have been imported.');
     }
