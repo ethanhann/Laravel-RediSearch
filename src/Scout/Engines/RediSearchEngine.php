@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Collection;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
 use Ehann\RediSearch\Fields\FieldFactory;
+use Ehann\RediSearch\Fields\TextField;
+use Ehann\RediSearch\Fields\NumericField;
+use Ehann\RediSearch\Fields\GeoField;
+use Ehann\RediSearch\Fields\TagField;
 
 class RediSearchEngine extends Engine
 {
@@ -36,15 +40,29 @@ class RediSearchEngine extends Engine
 		$model = $models->first();
         $index = new Index($this->redisRawClient, $model->first()->searchableAs());
 
-		$models->each(function ($item) use ($index, $model) {
-            foreach ($item->toSearchableArray() as $name => $value) {
+		//$models->each(function ($item) use ($index, $model) {
+            foreach ($model->searchableSchema() as $name => $value) {
 				
                 if ($name !== $model->getKeyName()) {
-                    $value = $value ?? '';
-                    $index->$name = FieldFactory::make($name, $value);
+					$value = $value ?? '';
+
+					if ($value === NumericField::class) {
+						$index->addNumericField($name);
+						continue;
+					}
+					if ($value === GeoField::class) {
+						$index->addGeoField($name);
+						continue;
+					}
+					if ($value === TagField::class) {
+						$index->addTagField($name);
+						continue;
+					}
+
+					$index->addTextField($name);
                }
             }
-		});
+		//});
 
 		$models
 			->each(function ($item) use ($index, $model) {
@@ -55,7 +73,7 @@ class RediSearchEngine extends Engine
 				foreach ($item->toSearchableArray() as $name => $value) {
 					if ($name !== $model->getKeyName()) {
 						$value = $value ?? '';
-						$document->$name = FieldFactory::make($name, $value);
+						$document->$name->setValue($value); //= FieldFactory::make($name, $value);
 					}
 				}
 				try {
@@ -67,20 +85,6 @@ class RediSearchEngine extends Engine
 				}
 				
 			});
-
-        // $models
-        //     ->map(function ($model) use ($index) {
-        //         $array = $model->toSearchableArray();
-        //         if (empty($array)) {
-        //             return;
-        //         }
-        //         return array_merge(['id' => $model->getKey()], $array);
-        //     })
-        //     ->filter()
-        //     ->values()
-        //     ->each(function ($item) use ($index) {
-        //         $index->add($item);
-        //     });
     }
 
     /**
@@ -113,7 +117,9 @@ class RediSearchEngine extends Engine
 		$index = (new Index($this->redisRawClient, $builder->index ?? $builder->model->searchableAs()));
 
 		if ($builder->callback) {
-			return (call_user_func($builder->callback, $index))->search($builder->query);
+			$advanced_search = (call_user_func($builder->callback, $index));
+
+			return $advanced_search->search($builder->query);
 		}
 
         return $index
