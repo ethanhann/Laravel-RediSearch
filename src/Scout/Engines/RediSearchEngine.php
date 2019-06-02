@@ -7,6 +7,11 @@ use Ehann\RedisRaw\RedisRawClientInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
+use Ehann\RediSearch\Fields\FieldFactory;
+use Ehann\RediSearch\Fields\TextField;
+use Ehann\RediSearch\Fields\NumericField;
+use Ehann\RediSearch\Fields\GeoField;
+use Ehann\RediSearch\Fields\TagField;
 
 class RediSearchEngine extends Engine
 {
@@ -32,21 +37,54 @@ class RediSearchEngine extends Engine
      */
     public function update($models)
     {
-        $index = new Index($this->redisRawClient, $models->first()->searchableAs());
+		$model = $models->first();
+        $index = new Index($this->redisRawClient, $model->first()->searchableAs());
 
-        $models
-            ->map(function ($model) {
-                $array = $model->toSearchableArray();
-                if (empty($array)) {
-                    return;
-                }
-                return array_merge(['id' => $model->getKey()], $array);
-            })
-            ->filter()
-            ->values()
-            ->each(function ($item) use ($index) {
-                $index->add($item);
-            });
+		//$models->each(function ($item) use ($index, $model) {
+            foreach ($model->searchableSchema() as $name => $value) {
+				
+                if ($name !== $model->getKeyName()) {
+					$value = $value ?? '';
+
+					if ($value === NumericField::class) {
+						$index->addNumericField($name);
+						continue;
+					}
+					if ($value === GeoField::class) {
+						$index->addGeoField($name);
+						continue;
+					}
+					if ($value === TagField::class) {
+						$index->addTagField($name);
+						continue;
+					}
+
+					$index->addTextField($name);
+               }
+            }
+		//});
+
+		$models
+			->each(function ($item) use ($index, $model) {
+				$document = $index->makeDocument(
+					$item->getKey()
+					// property_exists($item, $model->getKeyName()) ? $item->{$model->getKeyName()} : null
+				);
+				foreach ($item->toSearchableArray() as $name => $value) {
+					if ($name !== $model->getKeyName()) {
+						$value = $value ?? '';
+						$document->$name->setValue($value); //= FieldFactory::make($name, $value);
+					}
+				}
+				try {
+					$index->add($document);
+				} catch (\Throwable $th) {
+					if ($th->getMessage() == "Document already exists") {
+						$index->replace($document);
+					}
+				}
+				
+			});
     }
 
     /**
@@ -76,7 +114,15 @@ class RediSearchEngine extends Engine
      */
     public function search(Builder $builder)
     {
-        return (new Index($this->redisRawClient, $builder->index ?? $builder->model->searchableAs()))
+		$index = (new Index($this->redisRawClient, $builder->index ?? $builder->model->searchableAs()));
+
+		if ($builder->callback) {
+			$advanced_search = (call_user_func($builder->callback, $index));
+
+			return $advanced_search->search($builder->query);
+		}
+
+        return $index
             ->search($builder->query);
     }
 
@@ -107,8 +153,10 @@ class RediSearchEngine extends Engine
         return collect($results->getDocuments())->pluck('id')->values();
     }
 
-    public function map($results, $model)
+    public function map(Builder $builder, $results, $model)
     {
+		$results = collect($results);
+
         $count = $results->first();
         if ($count === 0) {
             return Collection::make();

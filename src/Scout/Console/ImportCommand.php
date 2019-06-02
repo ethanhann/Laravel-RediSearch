@@ -7,6 +7,10 @@ use Ehann\RediSearch\Fields\FieldFactory;
 use Ehann\RediSearch\Index;
 use Ehann\RedisRaw\RedisRawClientInterface;
 use Illuminate\Console\Command;
+use Ehann\RediSearch\Fields\TextField;
+use Ehann\RediSearch\Fields\NumericField;
+use Ehann\RediSearch\Fields\GeoField;
+use Ehann\RediSearch\Fields\TagField;
 
 class ImportCommand extends Command
 {
@@ -14,6 +18,7 @@ class ImportCommand extends Command
                             {model : The model class to import.} 
                             {--recreate-index : Drop the index before importing.}
                             {--no-id : Do not select by "id" primary key.}
+                            {--no-import-models : Create index but dont import model.}
                             ';
     protected $description = 'Import models into index';
 
@@ -23,7 +28,7 @@ class ImportCommand extends Command
         $model = new $class();
         $index = new Index($redisClient, $model->searchableAs());
 
-        $fields = array_keys($model->toSearchableArray());
+        $fields = array_keys($model->searchableSchema());
         if (!$this->option('no-id')) {
             $fields[] = $model->getKeyName();
             $query = implode(', ', array_unique($fields));
@@ -31,20 +36,33 @@ class ImportCommand extends Command
 
         if ($this->option('no-id') || $query === '') {
             $query = '*';
-        }
-        $records = DB::connection($model->getConnectionName())->table($model->getTable())
-            ->select(DB::raw($query))
-            ->get();
+		}
+		
+        $records = $class::select(DB::raw($query))
+			->get();
 
-        // Define Schema
-        $records->each(function ($item) use ($index, $model) {
-            foreach ($item as $name => $value) {
-                if ($name !== $model->getKeyName()) {
-                    $value = $value ?? '';
-                    $index->$name = FieldFactory::make($name, $value);
-                }
-            }
-        });
+		// Define Schema
+		foreach ($model->searchableSchema() as $name => $value) {
+		
+			if ($name !== $model->getKeyName()) {
+				$value = $value ?? '';
+
+				if ($value === NumericField::class) {
+					$index->addNumericField($name);
+					continue;
+				}
+				if ($value === GeoField::class) {
+					$index->addGeoField($name);
+					continue;
+				}
+				if ($value === TagField::class) {
+					$index->addTagField($name);
+					continue;
+				}
+
+				$index->addTextField($name);
+		   }
+		}
 
         if ($records->isEmpty()) {
             $this->warn('There are no models to import.');
@@ -56,22 +74,27 @@ class ImportCommand extends Command
 
         if (!$index->create()) {
             $this->warn('The index already exists. Use --recreate-index to recreate the index before importing.');
-        }
-
-        $records
-            ->each(function ($item) use ($index, $model) {
-                $document = $index->makeDocument(
-                    property_exists($item, $model->getKeyName()) ? $item->{$model->getKeyName()} : null
-                );
-                foreach ((array)$item as $name => $value) {
-                    if ($name !== $model->getKeyName()) {
-                        $value = $value ?? '';
-                        $document->$name = FieldFactory::make($name, $value);
-                    }
-                }
-                $index->add($document);
-            });
-
-        $this->info('All [' . $class . '] records have been imported.');
+		}
+		
+		if (!$this->option('no-import-models')) {			
+			$records
+				->each(function ($item) use ($index, $model) {
+					$document = $index->makeDocument(
+						$item->getKey()
+					);
+					foreach ($item->toSearchableArray() as $name => $value) {
+						if ($name !== $model->getKeyName()) {
+							$value = $value ?? '';
+							$document->$name->setValue($value);
+						}
+					}
+					
+					$index->add($document);
+					
+				});
+			$this->info("[$class] models imported created successfully");
+		}else{
+			$this->info("$class index created successfully");
+		}
     }
 }
