@@ -3,11 +3,9 @@
 namespace Ehann\LaravelRediSearch\Scout\Console;
 
 use DB;
-use Ehann\RediSearch\Fields\FieldFactory;
 use Ehann\RediSearch\Index;
 use Ehann\RedisRaw\RedisRawClientInterface;
 use Illuminate\Console\Command;
-use Ehann\RediSearch\Fields\TextField;
 use Ehann\RediSearch\Fields\NumericField;
 use Ehann\RediSearch\Fields\GeoField;
 use Ehann\RediSearch\Fields\TagField;
@@ -36,33 +34,33 @@ class ImportCommand extends Command
 
         if ($this->option('no-id') || $query === '') {
             $query = '*';
-		}
-		
+        }
+
         $records = $class::select(DB::raw($query))
-			->get();
+            ->get();
 
-		// Define Schema
-		foreach ($model->searchableSchema() as $name => $value) {
-		
-			if ($name !== $model->getKeyName()) {
-				$value = $value ?? '';
+        // Define Schema
+        foreach ($model->searchableSchema() as $name => $value) {
 
-				if ($value === NumericField::class) {
-					$index->addNumericField($name);
-					continue;
-				}
-				if ($value === GeoField::class) {
-					$index->addGeoField($name);
-					continue;
-				}
-				if ($value === TagField::class) {
-					$index->addTagField($name);
-					continue;
-				}
+            if ($name !== $model->getKeyName()) {
+                $value = $value ?? '';
 
-				$index->addTextField($name);
-		   }
-		}
+                if ($value === NumericField::class) {
+                    $index->addNumericField($name);
+                    continue;
+                }
+                if ($value === GeoField::class) {
+                    $index->addGeoField($name);
+                    continue;
+                }
+                if ($value === TagField::class) {
+                    $index->addTagField($name);
+                    continue;
+                }
+
+                $index->addTextField($name);
+            }
+        }
 
         if ($records->isEmpty()) {
             $this->warn('There are no models to import.');
@@ -74,27 +72,27 @@ class ImportCommand extends Command
 
         if (!$index->create()) {
             $this->warn('The index already exists. Use --recreate-index to recreate the index before importing.');
-		}
-		
-		if (!$this->option('no-import-models')) {			
-			$records
-				->each(function ($item) use ($index, $model) {
-					$document = $index->makeDocument(
-						$item->getKey()
-					);
-					foreach ($item->toSearchableArray() as $name => $value) {
-						if ($name !== $model->getKeyName()) {
-							$value = $value ?? '';
-							$document->$name->setValue($value);
-						}
-					}
-					
-					$index->add($document);
-					
-				});
-			$this->info("[$class] models imported created successfully");
-		}else{
-			$this->info("$class index created successfully");
-		}
+        }
+
+        if (!$this->option('no-import-models')) {
+            $records
+                ->each(function ($item) use ($index, $model) {
+                    $document = $index->makeDocument(
+                        $item->getKey()
+                    );
+                    foreach ($item->toSearchableArray() as $name => $value) {
+                        if ($name !== $model->getKeyName()) {
+                            $value = $value ?? '';
+                            $document->$name->setValue($value);
+                        }
+                    }
+
+                    $index->add($document);
+
+                });
+            $this->info("[$class] models imported created successfully");
+        } else {
+            $this->info("$class index created successfully");
+        }
     }
 }
