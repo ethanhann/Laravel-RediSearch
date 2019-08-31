@@ -70,7 +70,6 @@ class ImportCommand extends Command
         }
 
         if (!$this->option('no-import-models')) {
-
             $records_total = $class::count();
             if (!$records_total) {
                 $this->warn('There are no models to import.');
