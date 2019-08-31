@@ -79,7 +79,7 @@ class ImportCommand extends Command
             $records
                 ->chunk($chunk_size, function ($models) use ($index, $model, $bar) {
                     $documents = [];
-                    foreach($models as $model) {
+                    foreach($models as $item) {
                         $document = $index->makeDocument(
                             $item->getKey()
                         );
