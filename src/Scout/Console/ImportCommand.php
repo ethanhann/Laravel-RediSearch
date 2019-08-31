@@ -78,7 +78,6 @@ class ImportCommand extends Command
             $records = $class::select(DB::raw($query));
             $records
                 ->chunk($chunk_size, function ($models) use ($index, $model, $bar) {
-                    $documents = [];
                     foreach($models as $item) {
                         $document = $index->makeDocument(
                             $item->getKey()
@@ -89,11 +88,9 @@ class ImportCommand extends Command
                                 $document->$name->setValue($value);
                             }
                         }
-                        $documents[] = $document;
+                        $index->add($document);
                         $bar->advance();
                     }
-
-                    $index->addMany($documents);
                 });
             $bar->finish();
 
