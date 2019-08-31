@@ -94,7 +94,7 @@ class ImportCommand extends Command
                 });
             $bar->finish();
 
-            $this->info("[$class] models imported created successfully");
+            $this->info(PHP_EOL."[$class] models imported created successfully");
         } else {
             $this->info("$class index created successfully");
         }
