@@ -191,4 +191,10 @@ class RediSearchEngine extends Engine
     {
         return $results->first();
     }
+
+    public function flush($model)
+    {
+        $index = new Index($this->redisRawClient, (new $model())->searchableAs());
+        $index->drop();
+    }
 }
