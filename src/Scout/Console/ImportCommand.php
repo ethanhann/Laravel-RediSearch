@@ -14,7 +14,7 @@ class ImportCommand extends Command
 {
     protected $signature = 'ehann:redisearch:import 
                             {model : The model class to import.} 
-                            {chunk-size : Import model chunk size. Default: 1000} 
+                            {--chunk-size=1000 : Import chunk size.} 
                             {--recreate-index : Drop the index before importing.}
                             {--no-id : Do not select by "id" primary key.}
                             {--no-import-models : Create index but dont import model.}
@@ -24,7 +24,7 @@ class ImportCommand extends Command
     public function handle(RedisRawClientInterface $redisClient)
     {
         $class = $this->argument('model');
-        $chunk_size = $this->argument('chunk-size') ?? 1000;
+        $chunk_size = $this->option('chunk-size') ?? 1000;
         $model = new $class();
         $index = new Index($redisClient, $model->searchableAs());
 
