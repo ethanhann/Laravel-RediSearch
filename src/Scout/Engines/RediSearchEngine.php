@@ -189,7 +189,7 @@ class RediSearchEngine extends Engine
      */
     public function getTotalCount($results)
     {
-        return $results->first();
+        return $results->getCount();
     }
 
     public function flush($model)
