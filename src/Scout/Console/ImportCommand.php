@@ -14,6 +14,7 @@ class ImportCommand extends Command
 {
     protected $signature = 'ehann:redisearch:import 
                             {model : The model class to import.} 
+                            {--chunk-size=1000 : Import chunk size.} 
                             {--recreate-index : Drop the index before importing.}
                             {--no-id : Do not select by "id" primary key.}
                             {--no-import-models : Create index but dont import model.}
@@ -23,6 +24,7 @@ class ImportCommand extends Command
     public function handle(RedisRawClientInterface $redisClient)
     {
         $class = $this->argument('model');
+        $chunk_size = $this->option('chunk-size') ?? 1000;
         $model = new $class();
         $index = new Index($redisClient, $model->searchableAs());
 
@@ -35,9 +37,6 @@ class ImportCommand extends Command
         if ($this->option('no-id') || $query === '') {
             $query = '*';
         }
-
-        $records = $class::select(DB::raw($query))
-            ->get();
 
         // Define Schema
         foreach ($model->searchableSchema() as $name => $value) {
@@ -62,10 +61,6 @@ class ImportCommand extends Command
             }
         }
 
-        if ($records->isEmpty()) {
-            $this->warn('There are no models to import.');
-        }
-
         if ($this->option('recreate-index')) {
             $index->drop();
         }
@@ -75,22 +70,31 @@ class ImportCommand extends Command
         }
 
         if (!$this->option('no-import-models')) {
+            $records_total = $class::count();
+            if (!$records_total) {
+                $this->warn('There are no models to import.');
+            }
+            $bar = $this->output->createProgressBar($records_total);
+            $records = $class::select(DB::raw($query));
             $records
-                ->each(function ($item) use ($index, $model) {
-                    $document = $index->makeDocument(
-                        $item->getKey()
-                    );
-                    foreach ($item->toSearchableArray() as $name => $value) {
-                        if ($name !== $model->getKeyName()) {
-                            $value = $value ?? '';
-                            $document->$name->setValue($value);
+                ->chunk($chunk_size, function ($models) use ($index, $model, $bar) {
+                    foreach($models as $item) {
+                        $document = $index->makeDocument(
+                            $item->getKey()
+                        );
+                        foreach ($item->toSearchableArray() as $name => $value) {
+                            if ($name !== $model->getKeyName()) {
+                                $value = $value ?? '';
+                                $document->$name->setValue($value);
+                            }
                         }
+                        $index->add($document);
+                        $bar->advance();
                     }
-
-                    $index->add($document);
-
                 });
-            $this->info("[$class] models imported created successfully");
+            $bar->finish();
+
+            $this->info(PHP_EOL."[$class] models imported created successfully");
         } else {
             $this->info("$class index created successfully");
         }

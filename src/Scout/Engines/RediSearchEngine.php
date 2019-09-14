@@ -189,6 +189,12 @@ class RediSearchEngine extends Engine
      */
     public function getTotalCount($results)
     {
-        return $results->first();
+        return $results->getCount();
+    }
+
+    public function flush($model)
+    {
+        $index = new Index($this->redisRawClient, (new $model())->searchableAs());
+        $index->drop();
     }
 }
