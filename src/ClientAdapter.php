@@ -16,14 +16,14 @@ class ClientAdapter extends AbstractRedisRawClient
         return $usePipeline ? $this->redis->pipeline() : $this->redis->multi();
     }
 
-    public function rawCommand(string $command, array $arguments)
+    public function rawCommand(string $command, array $arguments = [])
     {
         $arguments = $this->prepareRawCommandArguments($command, $arguments);
         $rawResult = null;
         try {
             $rawResult = $this->redis->executeRaw($arguments);
         } catch (Exception $exception) {
-            $this->validateRawCommandResults($exception);
+            $this->validateRawCommandResults($exception, $command, $arguments);
         }
         return $this->normalizeRawCommandResult($rawResult);
     }
