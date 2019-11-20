@@ -75,7 +75,6 @@ class RediSearchEngine extends Engine
                 } catch (DocumentAlreadyInIndexException $exception) {
                     $index->replace($document);
                 }
-
             });
     }
 
