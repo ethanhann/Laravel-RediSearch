@@ -2,6 +2,7 @@
 
 namespace Ehann\LaravelRediSearch\Scout\Engines;
 
+use Ehann\RediSearch\Exceptions\DocumentAlreadyInIndexException;
 use Ehann\RediSearch\Index;
 use Ehann\RedisRaw\RedisRawClientInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -71,12 +72,8 @@ class RediSearchEngine extends Engine
                 }
                 try {
                     $index->add($document);
-                } catch (\Throwable $th) {
-                    if ($th->getMessage() == "Document already exists") {
-                        $index->replace($document);
-                    } else {
-                        throw $th;
-                    }
+                } catch (DocumentAlreadyInIndexException $exception) {
+                    $index->replace($document);
                 }
 
             });
