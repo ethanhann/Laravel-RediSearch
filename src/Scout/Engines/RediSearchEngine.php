@@ -61,8 +61,8 @@ class RediSearchEngine extends Engine
             }
         }
 
-        $models
-            ->each(function ($item) use ($index, $model) {
+        $documents = $models
+            ->map(function ($item) use ($index, $model) {
                 $document = $index->makeDocument($item->getKey());
                 foreach ($item->toSearchableArray() as $name => $value) {
                     if ($name !== $model->getKeyName()) {
@@ -70,12 +70,11 @@ class RediSearchEngine extends Engine
                         $document->$name->setValue($value);
                     }
                 }
-                try {
-                    $index->add($document);
-                } catch (DocumentAlreadyInIndexException $exception) {
-                    $index->replace($document);
-                }
-            });
+                return $document;
+            })
+            ->toArray();
+
+        $index->replaceMany($documents);
     }
 
     /**
