@@ -74,6 +74,8 @@ class RediSearchEngine extends Engine
                 } catch (\Throwable $th) {
                     if ($th->getMessage() == "Document already exists") {
                         $index->replace($document);
+                    } else {
+                        throw $th;
                     }
                 }
 
